@@ -1,0 +1,31 @@
+---
+- name: Check asterisk service
+  stat:
+    path: /etc/firewalld/services/asterisk.xml
+  register: asterisk_firewalld_service
+
+- name: Add asterisk service
+  command: firewall-cmd --permanent --new-service=asterisk
+  when: not asterisk_firewalld_service.stat.exists
+  notify: firewall reload
+
+- name: Add ports to service
+  command: firewall-cmd --permanent --service=asterisk --add-port={{ item }}
+  with_items:
+    - '5060/tcp'
+    - '5060/udp'
+    - '5061/tcp'
+    - '5061/udp'
+    - '4569/udp'
+    - '5038/tcp'
+    - '10000-20000/udp'
+  when: not asterisk_firewalld_service.stat.exists
+  notify: firewall reload
+
+- name: Add asterisk to public zone
+  firewalld:
+    zone: public
+    service: asterisk
+    permanent: true
+    state: enabled
+  notify: firewall reload

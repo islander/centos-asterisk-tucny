@@ -1,0 +1,19 @@
+---
+- name: Install packages
+  yum:
+    name: [ 
+      'vim',
+      'mc',
+      'htop',
+      'tcpdump',
+      'smartmontools',
+      'mtr',
+      'nmap',
+      'ngrep',
+      'iftop',
+      'wget',
+      'mutt',
+      'iotop',
+    ]
+    state: present
+    disable_gpg_check: yes

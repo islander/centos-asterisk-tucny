@@ -1,0 +1,5 @@
+---
+- hosts: asterisk_machines
+  become: yes
+  roles:
+     - asterisk

@@ -1,0 +1,16 @@
+---
+- name: Check IronTec repo file
+  copy:
+    src: irontec.repo
+    dest: /etc/yum.repos.d/irontec.repo
+  register: irontec_repo
+
+- name: Import IronTec GPG key
+  rpm_key:
+    key: http://packages.irontec.com/public.key
+    state: present
+
+- name: Install sngrep
+  yum:
+    name: sngrep
+    state: present

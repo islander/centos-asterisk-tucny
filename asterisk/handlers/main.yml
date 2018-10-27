@@ -1,0 +1,6 @@
+---
+- name: sip reload
+  command: asterisk -rx"sip reload"
+
+- name: firewall reload
+  command: firewall-cmd --reload

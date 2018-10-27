@@ -1,0 +1,21 @@
+---
+- name: Install NTP packages
+  yum:
+    name: ['ntp', 'ntpdate']
+    state: present
+
+- name: Add ntp to public zone
+  firewalld:
+    zone: public
+    service: ntp
+    permanent: true
+    state: enabled
+  notify: firewall reload
+
+- name: Enable service ntpd and ensure it is not masked
+  systemd:
+    name: ntpd
+    state: started
+    enabled: yes
+    masked: no
+

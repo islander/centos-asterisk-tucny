@@ -1,7 +1,22 @@
 ---
+- name: Disable selinux
+  selinux:
+    state: disabled
+
+- name: Add EPEL repository
+  yum_repository:
+    name: epel
+    description: EPEL YUM repo
+    baseurl: https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+
+- name: Import EPEL key
+  rpm_key:
+    key: "{{ epel_repo_gpg_key }}"
+
 - name: Install packages
   yum:
     name: [ 
+      'git',
       'vim',
       'mc',
       'htop',

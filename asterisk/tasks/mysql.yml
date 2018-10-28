@@ -1,0 +1,101 @@
+---
+- name: Install MariaDB
+  yum:
+    name: ['mariadb', 'mariadb-server', 'MySQL-python']
+    state: present
+
+- name: Enable service mariadb and ensure it is not masked
+  systemd:
+    name: mariadb
+    state: started
+    enabled: yes
+    masked: no
+
+- name: Remove test database and access to it
+  command: 'mysql -ne "{{ item }}"'
+  with_items:
+    - DROP DATABASE IF EXISTS test
+    - DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%'
+  changed_when: False
+  ignore_errors: True
+
+- name: Reload privilege tables
+  command: 'mysql -ne "{{ item }}"'
+  with_items:
+    - FLUSH PRIVILEGES
+  changed_when: False
+
+- name: Create a new database with name 'asterisk'
+  mysql_db:
+      name: asterisk
+      state: present
+
+- name: Removes all anonymous user accounts
+  mysql_user:
+    name: ''
+    host_all: yes
+    state: absent
+
+- name: Create asterisk mysql user
+  mysql_user:
+    name: asterisk
+    password: asterisk
+    priv: 'asterisk.*:ALL,GRANT'
+    state: present
+
+- name: Get asterisk sources
+  git:
+    repo: https://github.com/asterisk/asterisk
+    dest: /usr/local/src/asterisk
+    version: "{{ asterisk_version }}"
+
+- name: Prepare alembic config
+  copy:
+    src: "{{ asterisk_src_dir }}/contrib/ast-db-manage/{{ item }}.ini.sample"
+    dest: "{{ asterisk_src_dir }}/contrib/ast-db-manage/{{ item }}.ini"
+    remote_src: yes
+  with_items:
+    - config
+    - cdr
+
+- name: Set mysql password for alembic
+  ini_file:
+    path: "{{ asterisk_src_dir }}/contrib/ast-db-manage/{{ item }}.ini"
+    section: alembic
+    option: "sqlalchemy.url"
+    value: "mysql://asterisk:asterisk@localhost/asterisk"
+  with_items:
+    - config
+    - cdr
+
+- name: Install pip
+  yum:
+    name: 'python-pip'
+    state: present
+
+- name: Install alembic
+  pip:
+    name: alembic
+
+- name: Alembic upgrade
+  args:
+    chdir: "{{ asterisk_src_dir }}/contrib/ast-db-manage/"
+  command: "alembic -c {{ item }}.ini upgrade head"
+  with_items:
+    - config
+    - cdr
+
+- name: Add CDR filename field
+  command: 'mysql -ne "ALTER TABLE asterisk.cdr ADD COLUMN filename VARCHAR(120)"'
+  changed_when: False
+  ignore_errors: True
+
+- name: Add CDR indexes
+  command: 'mysql -ne "{{ item }}"'
+  with_items:
+    - CREATE INDEX start ON asterisk.cdr ( start );
+    - CREATE INDEX dst ON asterisk.cdr ( dst );
+    - CREATE INDEX src ON asterisk.cdr ( src );
+    - CREATE INDEX uniqueid ON asterisk.cdr ( uniqueid );
+  changed_when: False
+  ignore_errors: True

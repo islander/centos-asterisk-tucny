@@ -18,10 +18,13 @@
 - name: Enable asterisk repo
   ini_file:
     path: /etc/yum.repos.d/tucny-asterisk.repo
-    section: asterisk-13
+    section: "{{ item }}"
     option: enabled
     value: 1
     no_extra_spaces: yes
+  with_items:
+    - asterisk-13
+    - asterisk-common
 
 - name: Install packages
   yum:
@@ -32,6 +35,8 @@
       'asterisk-odbc',
       'asterisk-mp3',
       'asterisk-iax2',
+      'asterisk-sounds-core-en',
+      'asterisk-sounds-core-en-wav',
     ]
     state: present
     disable_gpg_check: yes

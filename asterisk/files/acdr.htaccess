@@ -1,0 +1,5 @@
+AuthName "Asterisk-CDR-Stat"
+AuthType Basic
+AuthUserFile /var/www/html/acdr/.htpasswd
+AuthGroupFile /dev/null
+require valid-user

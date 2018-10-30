@@ -1,6 +1,17 @@
 ---
+- name: cdr reload
+  command: asterisk -rx"module reload cdr"
+
+- name: cdr mysql reload
+  command: asterisk -rx"module reload cdr_mysql.so"
+
 - name: sip reload
   command: asterisk -rx"sip reload"
 
 - name: firewall reload
   command: firewall-cmd --reload
+
+- name: httpd restart
+  systemd:
+    name: httpd
+    state: restarted

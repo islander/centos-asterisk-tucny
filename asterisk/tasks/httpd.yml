@@ -1,0 +1,28 @@
+---
+- name: Install apache and php
+  yum:
+    name: [
+      'httpd',
+      'php',
+      'php-mysql',
+    ]
+    state: present
+  notify: httpd restart
+
+- name: Enable service httpd and ensure it is not masked
+  systemd:
+    name: httpd
+    state: started
+    enabled: yes
+    masked: no
+
+- name: Add httpd to public zone
+  firewalld:
+    zone: public
+    service: "{{ item }}"
+    permanent: true
+    state: enabled
+  with_items:
+    - http
+    - https
+  notify: firewall reload

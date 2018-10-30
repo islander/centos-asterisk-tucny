@@ -1,5 +1,9 @@
 ---
 - hosts: asterisk_machines
   become: yes
+  vars_prompt:
+    - name: "webcdr_pass"
+      prompt: "Enter password for CDR-viewer"
+      private: yes
   roles:
      - asterisk

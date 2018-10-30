@@ -4,3 +4,4 @@ epel_repo_gpg_key: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ an
 epel_repofile_path: "/etc/yum.repos.d/epel.repo"
 asterisk_version: "13.23.1"
 asterisk_src_dir: "/usr/local/src/asterisk"
+cdr_webroot: "/var/www/html/acdr"

@@ -85,8 +85,13 @@
     - config
     - cdr
 
+- name: Rename CDR start field
+  command: 'mysql -ne "ALTER TABLE asterisk.cdr CHANGE start calldate DATETIME DEFAULT NULL"'
+  changed_when: False
+  ignore_errors: True
+
 - name: Add CDR filename field
-  command: 'mysql -ne "ALTER TABLE asterisk.cdr ADD COLUMN filename VARCHAR(120)"'
+  command: 'mysql -ne "ALTER TABLE asterisk.cdr ADD COLUMN filename VARCHAR(255)"'
   changed_when: False
   ignore_errors: True
 

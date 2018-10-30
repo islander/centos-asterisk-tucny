@@ -1,0 +1,122 @@
+---
+- name: Download CDR table sql
+  get_url:
+    url: https://github.com/prog-it/Asterisk-CDR-Viewer-Mod/raw/master/docs/mysql_cdr.sql
+    dest: /tmp/mysql_cdr.sql
+
+- name: Set timestamp variable
+  set_fact:
+    now: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S')}}"
+
+- name: Get number of CDR records
+  command: 'mysql -ne "SELECT COUNT(1) FROM cdr" asterisk'
+  changed_when: False
+  ignore_errors: True
+  register: rows
+
+- name: Backup non-empty CDR table ...
+  mysql_db:
+    state: dump
+    name: asterisk
+    target: "/tmp/cdr~{{ now }}.sql"
+  when: rows.stdout != "0" and rows.stdout.find("doesn't exists") == -1
+
+- name: ... or drop empty CDR table
+  command: 'mysql -ne "DROP TABLE IF EXISTS cdr" asterisk'
+  changed_when: False
+  ignore_errors: True
+  when: rows.stdout == "0"
+
+- name: Import new CDR table structure
+  mysql_db: 
+    name: asterisk 
+    state: import 
+    target: /tmp/mysql_cdr.sql
+  when: rows.stdout == "0" and rows.stdout.find("doesn't exists") != -1
+
+- name: Add CDR aliases
+  blockinfile:
+    path: /etc/asterisk/cdr_mysql.conf
+    block: |
+      alias realdst => realdst
+      alias remoteip => remoteip
+      alias start => calldate
+    marker: "; {mark} ANSIBLE MANAGED ALIASES"
+  notify:
+    - cdr reload
+    - cdr mysql reload
+
+- name: Enable MySQL CDR backend
+  blockinfile:
+    path: /etc/asterisk/cdr_mysql.conf
+    block: |
+      [global]
+      hostname=localhost
+      dbname=asterisk
+      table=cdr
+      user=asterisk
+      password=asterisk
+      sock=/var/lib/mysql/mysql.sock
+    marker: "; {mark} ANSIBLE MANAGED GLOBAL"
+    insertafter: "^;\\[global\\]"
+  notify:
+    - cdr mysql reload
+
+- include_tasks: httpd.yml
+
+- name: Test CDR-viewer config
+  stat:
+    path: "{{ cdr_webroot }}/inc/config/config.php"
+  register: webcdr_config
+
+- name: Download CDR-viewer
+  git:
+    repo: https://github.com/prog-it/Asterisk-CDR-Viewer-Mod.git
+    dest: /var/www/html/acdr
+  when: not webcdr_config.stat.exists
+
+- name: Prepare CDR-viewer config
+  copy:
+    src: "{{ cdr_webroot }}/inc/config/config.php.sample"
+    dest: "{{ cdr_webroot }}/inc/config/config.php"
+    remote_src: yes
+  when: not webcdr_config.stat.exists
+
+- name: Prepare CDR-viewer config
+  replace:
+    dest: "{{ cdr_webroot }}/inc/config/config.php"
+    regexp: '{{ item }}'
+    replace: asterisk
+  with_items:
+    - db_user
+    - db_name
+    - db_password
+
+- name: Enable BasicAuth from .htaccess
+  replace:
+    dest: "/etc/httpd/conf/httpd.conf"
+    regexp: 'AllowOverride None'
+    replace: 'AllowOverride AuthConfig'
+    backup: yes
+  notify:
+    - httpd restart
+
+- name: Copy BasicAuth for CDR-viewer
+  copy:
+    src: acdr.htaccess
+    dest: /var/www/html/acdr/.htaccess
+    owner: root
+    group: root
+    mode: 0666
+
+- name: Install passlib (required for htpasswd module)
+  yum:
+    name: python-passlib
+    state: present
+
+- name: Create htpasswd
+  htpasswd:
+    path: /var/www/html/acdr/.htpasswd
+    name: acdr
+    password: "{{ webcdr_pass }}"
+    crypt_scheme: md5_crypt

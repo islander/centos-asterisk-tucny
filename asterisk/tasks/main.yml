@@ -1,8 +1,9 @@
 ---
+- include_tasks: clear_records.yml
 #- include_tasks: common.yml
 #- include_tasks: asterisk.yml
 #- include_tasks: mysql.yml
-- include_tasks: webcdr.yml
+#- include_tasks: webcdr.yml
 #- include_tasks: sngrep.yml
 #- include_tasks: firewall.yml
 #- include_tasks: ntp.yml

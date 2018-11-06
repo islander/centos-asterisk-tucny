@@ -1,0 +1,17 @@
+---
+- name: Copy script
+  copy:
+    src: clear_old_records.sh
+    dest: /opt/clear_old_records.sh
+    owner: root
+    group: root
+    mode: 0777
+
+- name: Add cron job
+  cron:
+    name: clear old records
+    minute: 0
+    hour: 2
+    user: asterisk
+    job: "/opt/clear_old_records.sh"
+    cron_file: clear_old_records

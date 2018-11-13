@@ -98,7 +98,7 @@
 - name: Add CDR indexes
   command: 'mysql -ne "{{ item }}"'
   with_items:
-    - CREATE INDEX start ON asterisk.cdr ( start );
+    - CREATE INDEX calldate ON asterisk.cdr ( calldate );
     - CREATE INDEX dst ON asterisk.cdr ( dst );
     - CREATE INDEX src ON asterisk.cdr ( src );
     - CREATE INDEX uniqueid ON asterisk.cdr ( uniqueid );
